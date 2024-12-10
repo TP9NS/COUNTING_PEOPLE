@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메인 페이지</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        h1, h2, h3 {
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #ffffff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #e9f5ff;
+        }
+        form {
+            text-align: center;
+            margin-top: 20px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>메인 페이지</h1>
+        <p>최근 {{ days_filter }}일 간 지점별 출입자 수</p>
+
+        <!-- 날짜 필터 버튼 -->
+        <form method="POST">
+            <button type="submit" name="last_3_days">최근 3일</button>
+            <button type="submit" name="last_week">최근 7일</button>
+            <button type="submit" name="last_month">최근 30일</button>
+        </form>
+
+        <!-- 최근 데이터 -->
+        <table>
+            <tr>
+                <th>지점</th>
+                <th>출입자 수</th>
+            </tr>
+            {% for location in location_counts %}
+            <tr>
+                <td>{{ location.location }}</td>
+                <td>{{ location.total_count }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <!-- 특정 날짜 범위 검색 -->
+        <h2>날짜별 출입자 수 검색</h2>
+        <form method="POST">
+            <label for="start_date">시작 날짜:</label>
+            <input type="date" id="start_date" name="start_date" required>
+            <label for="end_date">종료 날짜:</label>
+            <input type="date" id="end_date" name="end_date" required>
+            <button type="submit" name="search_by_date">검색</button>
+        </form>
+
+        <h3>검색 결과</h3>
+        <table border="1">
+            <tr>
+                <th>지점</th>
+                <th>출입자 수</th>
+            </tr>
+            {% for result in results %}
+            <tr>
+                <td>{{ result.location }}</td>
+                <td>{{ result.total_count }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        
+        <!-- 분석 버튼은 테이블 아래에 한 번만 표시 -->
+        {% if results %}
+            <br>
+            <a href="{{ url_for('analyze_multiple', start_date=start_date, end_date=end_date) }}">분석</a>
+        {% endif %}
+
+        <!-- 지점 이름으로 검색 -->
+        <h2>지점 이름으로 검색</h2>
+        <form method="POST">
+            <label for="location">지점 이름:</label>
+            <input type="text" id="location" name="location" required>
+            <button type="submit" name="search_by_location">검색</button>
+        </form>
+
+        {% if search_by_location_results %}
+        <h3>검색 결과</h3>
+        <table>
+            <tr>
+                <th>지점</th>
+                <th>출입자 수</th>
+                <th>날짜</th>
+            </tr>
+            {% for result in search_by_location_results %}
+            <tr>
+                <td>{{ result.location }}</td>
+                <td>{{ result.count }}</td>
+                <td>{{ result.date }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <br>
+        <a href="{{ url_for('analyze', location=search_by_location_results[0].location) }}">분석</a>
+        {% endif %}
+
+        <br>
+        <a href="/dashboard">대시보드로 이동</a>
+    </div>
+</body>
+</html>

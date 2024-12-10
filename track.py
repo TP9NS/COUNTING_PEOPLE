@@ -8,7 +8,7 @@ from pathlib import Path
 import cv2
 import torch
 import torch.backends.cudnn as cudnn
-import requests  # 서버에 상품 번호를 전송하기 위한 라이브러리
+import requests  
 import threading
 sys.path.insert(0, './yolov5')
 
@@ -28,67 +28,38 @@ if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))  # add ROOT to PATH
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
-# 서버 주소 (서버가 실행되는 IP와 포트를 지정합니다)
-SERVER_URL = 'http://172.20.10.4:5000/product'  # 서버 IP 주소로 변경 필요
-# 전역 변수 초기화
-count = 0
-"""data = {    1: {"name": "abc_choco_cookie", "price": 1000, "image": "static/choco.jpg"},
-    2: {"name": "chicchoc", "price": 500, "image": "static/chic.jpg"},
-    3: {"name": "pocachip_original", "price": 800, "image": "static/poka.jpg"},
-    4: {"name": "osatsu", "price": 1000, "image": "static/osa.jpg"},
-    5: {"name": "turtle_chips", "price": 1500, "image": "static/turtle.jpg"},  # 객체 ID를 추적하기 위한 사전
-    7: {"name": "concho", "price": 1500, "image": "static/turtle.jpg"}}
-#CLASS 이름으로 상품번호검색
-def find_number_by_name(name):
-    global data
-    for key, value in data.items():
-        if value["name"] == name:
-            return key
-    return None
-# 상품 번호를 서버에 전송하는 함수"""
+SERVER_URL = 'http://127.0.0.1:5000/person'  
 
 # 전역 변수 초기화
 count = 0
 passed_objects = {}  # 선을 넘은 객체를 기록하는 사전
-
-"""def send_product_to_server(product_name):
-    try:
-        # 서버로 상품 번호를 전송
-        response = requests.post(SERVER_URL, json={"product_name": product_name})
-        if response.status_code == 200:
-            product_info = response.json()
-            print(f"상품 정보: {product_info['name']}, 가격: {product_info['price']}")
-        else:
-            print(f"서버에서 오류가 발생했습니다: {response.status_code}")
-    except Exception as e:
-        print(f"서버와 통신 중 오류가 발생했습니다: {e}")"""
-def send_product_to_server_async(product_name):
-    # 비동기 요청을 보낼 함수
+areaName = '안양대학교 아리관 602호'
+def send_to_server_async():
+    global areaName
     def send_request():
         try:
-            requests.post(SERVER_URL, json={"product_name": product_name})
-            print(f"{product_name} 정보를 서버에 성공적으로 전송했습니다.")
+            requests.post(SERVER_URL, json={"areaName": areaName})
+            print(f"{areaName} 지점의 카운트를 서버에 성공적으로 전송했습니다.")
         except Exception as e:
             print(f"서버와 통신 중 오류가 발생했습니다: {e}")
     
     # 새로운 스레드 생성 후 시작
     thread = threading.Thread(target=send_request)
     thread.start()
-# 객체가 선을 지나갈 때 상품 이름을 전송하는 함수
+
 def count_obj(box, w, h, obj_id, class_name):
     global count, passed_objects
     # 객체의 중앙 좌표 계산
     center_coordinates = (int(box[0] + (box[2] - box[0]) / 2), int(box[1] + (box[3] - box[1]) / 2))
-    line_position = w - 200  # 화면 너비에서 200px 떨어진 위치에 선을 긋습니다.
+    line_position = w - 300  # 화면 너비에서 200px 떨어진 위치에 선을 긋습니다.
 
     # 객체가 선을 넘었는지 확인하고, 이미 넘은 객체는 무시
     if center_coordinates[0] > line_position and obj_id not in passed_objects:
         count += 1
         passed_objects[obj_id] = True  # 객체가 선을 넘었음을 기록
-        print(f"객체가 선을 넘었습니다: {class_name}")
-        
+        print("사람이 선을 넘었습니다.")        
         # 서버로 상품 이름을 전송
-        send_product_to_server_async(class_name)
+        send_to_server_async()
 
 
 def detect(opt):
@@ -223,7 +194,7 @@ def detect(opt):
             im0 = annotator.result()
 
             # 화면에 선을 그립니다 (화면 오른쪽에서 200px 떨어진 위치)
-            line_position = w - 200
+            line_position = w - 300
             color = (0, 255, 0)  # 초록색 선
             thickness = 2
             cv2.line(im0, (line_position, 0), (line_position, h), color, thickness)
@@ -239,7 +210,7 @@ def detect(opt):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--yolo_model', nargs='+', type=str, default='plzlast.pt', help='model.pt path(s)')
+    parser.add_argument('--yolo_model', nargs='+', type=str, default='yolov5m.pt', help='model.pt path(s)')
     parser.add_argument('--deep_sort_model', type=str, default='osnet_x0_25')
     parser.add_argument('--source', type=str, default='0', help='source')  # file/folder, 0 for webcam
     parser.add_argument('--output', type=str, default='inference/output', help='output folder')  # output folder
@@ -251,7 +222,7 @@ if __name__ == '__main__':
     parser.add_argument('--show-vid', action='store_true', help='display tracking video results')
     parser.add_argument('--save-vid', action='store_true', help='save video tracking results')
     parser.add_argument('--save-txt', action='store_true', help='save MOT compliant results to *.txt')
-    parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --class 0, or --class 16 17')
+    parser.add_argument('--classes', nargs='+', default= [0],type=int, help='filter by class: --class 0, or --class 16 17')
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     parser.add_argument('--evaluate', action='store_true', help='augmented inference')
@@ -268,3 +239,4 @@ if __name__ == '__main__':
 
     with torch.no_grad():
         detect(opt)
+print('asd')
